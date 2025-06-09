@@ -1,0 +1,16 @@
+[project]
+name = "govee_smartplug_monitor"
+version = "0.1.0"
+description = "Default template for PDM package"
+requires-python = "==3.13.*"
+dependencies = [
+    "requests",
+]
+authors = [
+    {name = "James Westover", email = "james@westover.dev"},
+]
+readme = "README.md"
+license = {text = "MIT"}
+
+[tool.pdm]
+distribution = false
