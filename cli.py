@@ -293,7 +293,6 @@ def run_monitor(fail_mode="any"):
                 device_id = plug.get("device_id")
                 model = plug.get("model")
                 name = plug.get("name")
-                pushcut_url = plug.get("pushcut_url", config.get("pushcut_url", ""))
                 try:
                     state_response = requests.get(
                         "https://developer-api.govee.com/v1/devices/state",

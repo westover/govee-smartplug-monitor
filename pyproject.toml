@@ -25,3 +25,9 @@ cmd = "python cli.py generate-systemd"
 
 [tool.pdm.scripts.install-systemd]
 cmd = "python cli.py generate-systemd"
+
+[tool.pdm.scripts.logs-systemd]
+cmd = "journalctl -u govee-monitor.service -f"
+
+[tool.pdm.scripts.restart-systemd]
+cmd = "sudo systemctl restart govee-monitor.service"
