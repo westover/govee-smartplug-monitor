@@ -19,4 +19,4 @@ distribution = false
 config = "python cli.py config"
 check = "python cli.py check"
 run = { cmd = "python cli.py run"}
-generate-systemd = { cmd = "python cli.py generate-systemd --plug", help = "Generate systemd unit (pass plug name as argument)" }
+generate-systemd = { cmd = "python cli.py generate-systemd" }

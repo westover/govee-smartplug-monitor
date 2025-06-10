@@ -1,12 +1,13 @@
 # IDEs and editors
-.idea/               # JetBrains (e.g., PyCharm, IntelliJ)
+# JetBrains IDEs
+.idea/
 *.iml
-.vscode/             # Visual Studio Code
-.project             # Eclipse
-.classpath           # Eclipse
-.settings/           # Eclipse
-Thumbs.db            # Windows image cache
-.DS_Store            # macOS folder metadata
+.vscode/
+.project
+.classpath
+.settings/
+Thumbs.db
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
