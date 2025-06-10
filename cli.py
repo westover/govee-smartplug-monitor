@@ -412,6 +412,7 @@ After=network.target
 Type=simple
 WorkingDirectory={working_dir}
 ExecStart=pdm run run
+Environment=PYTHONUNBUFFERED=1
 Restart=on-failure
 RestartSec=10
 
