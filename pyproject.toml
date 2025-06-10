@@ -20,3 +20,9 @@ config = "python cli.py config"
 check = "python cli.py check"
 run = { cmd = "python cli.py run"}
 generate-systemd = { cmd = "python cli.py generate-systemd" }
+
+[tool.pdm.scripts.generate-systemd]
+cmd = "python cli.py generate-systemd"
+
+[tool.pdm.scripts.install-systemd]
+cmd = "python cli.py generate-systemd"

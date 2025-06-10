@@ -341,19 +341,22 @@ def run_monitor(fail_mode="any"):
             time.sleep(interval)
 
 
-# Generate systemd unit file for the monitor
-def generate_systemd_unit(service_name="govee-smartplug-monitor.service", dry_run=True):
-    """
-    Generate a systemd unit file for running the monitor.
-    """
+
+# Generate and install the systemd unit file for the monitor
+def generate_systemd_unit():
     import os
+    import subprocess
+    service_name = "govee-monitor.service"
+    systemd_path = f"/etc/systemd/system/{service_name}"
+    working_dir = os.getcwd()
+
     unit_file = f"""[Unit]
 Description=Govee Smart Plug Monitor
 After=network.target
 
 [Service]
 Type=simple
-WorkingDirectory={os.getcwd()}
+WorkingDirectory={working_dir}
 ExecStart=pdm run run
 Restart=on-failure
 RestartSec=10
@@ -361,20 +364,22 @@ RestartSec=10
 [Install]
 WantedBy=multi-user.target
 """
-    if dry_run:
-        print(f"\n--- {service_name} ---\n{unit_file}\n--- End of {service_name} ---\n")
-        print("To enable the service:")
-        print("  sudo systemctl daemon-reexec")
-        print(f"  sudo systemctl enable {service_name}")
-        print(f"  sudo systemctl start {service_name}")
-    else:
-        with open(service_name, "w") as f:
+
+    try:
+        with open("govee-monitor.service", "w") as f:
             f.write(unit_file)
-        print(f"Systemd unit file written to {service_name}")
-        print("To enable the service:")
-        print("  sudo systemctl daemon-reexec")
-        print(f"  sudo systemctl enable {service_name}")
-        print(f"  sudo systemctl start {service_name}")
+        print("Local systemd unit file created: govee-monitor.service")
+
+        print(f"Attempting to install systemd unit to {systemd_path}...")
+
+        subprocess.run(["sudo", "cp", "govee-monitor.service", systemd_path], check=True)
+        subprocess.run(["sudo", "systemctl", "daemon-reexec"], check=True)
+        subprocess.run(["sudo", "systemctl", "enable", service_name], check=True)
+        subprocess.run(["sudo", "systemctl", "start", service_name], check=True)
+
+        print(f"Systemd service {service_name} installed and started.")
+    except Exception as e:
+        print(f"Error setting up systemd service: {e}")
 
 def main():
     import argparse
@@ -400,8 +405,7 @@ def main():
     elif args.command == "run":
         run_monitor(fail_mode=args.fail_mode)
     elif args.command == "generate-systemd":
-        # Default service name
-        generate_systemd_unit(dry_run=args.dry_run)
+        generate_systemd_unit()
     else:
         parser.print_help()
 

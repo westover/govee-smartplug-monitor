@@ -134,3 +134,4 @@ cython_debug/
 
 # Don't upload secrets
 config.json
+govee-monitor.service
