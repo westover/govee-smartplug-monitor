@@ -350,6 +350,8 @@ def run_monitor(fail_mode="any"):
                 device_id = plug.get("device_id")
                 model = plug.get("model")
                 name = plug.get("name")
+                pushcut_url = plug.get("pushcut_url", config.get("pushcut_url", ""))
+                power_expected = plug.get("expected_power", "ignore")
                 try:
                     state_response = requests.get(
                         "https://developer-api.govee.com/v1/devices/state",
@@ -361,14 +363,26 @@ def run_monitor(fail_mode="any"):
                         state_data = state_response.json().get("data", {})
                         props = {p: v for d in state_data.get("properties", []) for p, v in d.items()}
                         online_status = props.get("online", True)
+                        state = props.get("powerState", None)
+                        failure = False
                         if online_status:
                             print(f"{time.ctime()}: Plug '{name}' is online.")
                             all_fail = False
                         else:
                             print(f"{time.ctime()}: Plug '{name}' is UNRESPONSIVE.")
-                            # Pushcut for unresponsive device
-                            pushcut_url = plug.get("pushcut_url", config.get("pushcut_url", ""))
+                            failure = True
                             send_pushcut_notification(pushcut_url, "Govee Plug Alert", f"{name} is unresponsive or failed power check.")
+                        # Power state check and Pushcut notification for mismatch
+                        if power_expected != "ignore":
+                            if state != power_expected:
+                                print(f"{name} is in wrong power state (expected {power_expected}, got {state})")
+                                failure = True
+                                if pushcut_url:
+                                    send_pushcut_notification(
+                                        pushcut_url,
+                                        "Govee Power State Alert",
+                                        f"{name} is {str(state).upper()} but expected to be {str(power_expected).upper()}"
+                                    )
                     else:
                         print(f"{time.ctime()}: Plug '{name}' response error (status {state_response.status_code})")
                 except Exception as e:
