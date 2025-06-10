@@ -89,13 +89,39 @@ This displays the status of all Govee devices linked to your account and highlig
 
 ## Systemd Service (Optional)
 
-Generate a basic systemd unit file:
+You can install and launch the monitor as a systemd service:
 
 ```bash
-pdm run generate-systemd
+pdm run install-systemd
 ```
 
-Follow the printed instructions to enable the service on Linux systems.
+This will:
+- Create a `govee-monitor.service` unit file
+- Install it to `/etc/systemd/system/`
+- Reload the systemd daemon
+- Enable the service to start on boot
+- Start the service immediately
+
+### ✅ Verifying It’s Running
+
+To check the status:
+
+```bash
+systemctl status govee-monitor.service
+```
+
+To see the logs:
+
+```bash
+journalctl -u govee-monitor.service -f
+```
+
+To stop or restart the service:
+
+```bash
+sudo systemctl stop govee-monitor.service
+sudo systemctl restart govee-monitor.service
+```
 
 ---
 
