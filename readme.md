@@ -122,6 +122,18 @@ To stop or restart the service:
 sudo systemctl stop govee-monitor.service
 sudo systemctl restart govee-monitor.service
 ```
+## Pushcut Test
+
+After configuration, you can verify your Pushcut integration is working by sending a test message:
+
+```bash
+pdm run test-pushcut
+```
+
+This will send a notification to the configured Pushcut URL. If you don't receive it, confirm your URL is correct and your device is registered with the Pushcut app.
+
+---
+
 
 ---
 

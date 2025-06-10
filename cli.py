@@ -4,6 +4,47 @@ import os
 import requests
 import time
 
+# Helper: send pushcut notification
+def send_pushcut_notification(pushcut_url, title, text):
+    if not pushcut_url:
+        print("Pushcut URL is missing; cannot send notification.")
+        return
+
+    message = {
+        "title": title,
+        "text": text,
+    }
+
+    try:
+        response = requests.post(pushcut_url, json=message)
+        if response.ok:
+            print("Pushcut notification sent successfully.")
+        else:
+            print(f"Failed to send Pushcut notification: {response.status_code}")
+            print(response.text)
+    except Exception as e:
+        print(f"Error sending Pushcut notification: {e}")
+
+def test_pushcut():
+    if not os.path.exists(CONFIG_FILE):
+        print(f"No config found at {CONFIG_FILE}. Please run 'config' first.")
+        return
+
+    with open(CONFIG_FILE) as f:
+        config = json.load(f)
+
+    pushcut_url = config.get("pushcut_url")
+    if not pushcut_url:
+        print("No Pushcut URL configured.")
+        return
+
+    send_pushcut_notification(pushcut_url, "Pushcut Test Notification", "This is a test from your Govee monitor setup.")
+import argparse
+import json
+import os
+import requests
+import time
+
 CONFIG_FILE = "config.json"
 
 def write_config():
@@ -137,10 +178,23 @@ def write_config():
             "expected_power": power_input
         })
 
+    # Prompt for polling interval and fail strategy
+    interval = input("Polling interval in seconds (default 60): ").strip()
+    if not interval.isdigit():
+        interval = 60
+    else:
+        interval = int(interval)
+
+    fail_mode = input("Fail strategy (any/all) [default: any]: ").strip().lower()
+    if fail_mode not in {"any", "all"}:
+        fail_mode = "any"
+
     config = {
         "govee_api_key": api_key,
         "pushcut_url": pushcut_url,
-        "plugs": plugs
+        "plugs": plugs,
+        "interval": interval,
+        "fail_mode": fail_mode
     }
     with open(CONFIG_FILE, "w") as f:
         json.dump(config, f, indent=2)
@@ -275,6 +329,10 @@ def run_monitor(fail_mode="any"):
     monitored_plugs = config.get("plugs", [])
     headers = {"Govee-API-Key": api_key}
 
+    # Load interval and fail_mode from config if available
+    interval = config.get("interval", 60)
+    fail_mode = config.get("fail_mode", fail_mode)
+
     # Print monitored devices at start
     print(f"{time.ctime()}: Beginning monitoring of {len(monitored_plugs)} devices:")
     for plug in monitored_plugs:
@@ -282,7 +340,6 @@ def run_monitor(fail_mode="any"):
 
     fail_count = 0
     threshold = 3
-    interval = 60
 
     print(f"Monitoring all configured plugs every {interval} seconds with fail mode '{fail_mode}'...")
 
@@ -309,6 +366,9 @@ def run_monitor(fail_mode="any"):
                             all_fail = False
                         else:
                             print(f"{time.ctime()}: Plug '{name}' is UNRESPONSIVE.")
+                            # Pushcut for unresponsive device
+                            pushcut_url = plug.get("pushcut_url", config.get("pushcut_url", ""))
+                            send_pushcut_notification(pushcut_url, "Govee Plug Alert", f"{name} is unresponsive or failed power check.")
                     else:
                         print(f"{time.ctime()}: Plug '{name}' response error (status {state_response.status_code})")
                 except Exception as e:
@@ -324,12 +384,7 @@ def run_monitor(fail_mode="any"):
                     print(f"{time.ctime()}: ALERT - Failure condition met for {threshold * interval} seconds.")
                     for plug in monitored_plugs:
                         pushcut_url = plug.get("pushcut_url", config.get("pushcut_url", ""))
-                        if pushcut_url:
-                            try:
-                                r = requests.post(pushcut_url, timeout=10)
-                                print(f"{time.ctime()}: Pushcut triggered for '{plug.get('name')}': {r.status_code}")
-                            except Exception as ex:
-                                print(f"{time.ctime()}: Error triggering Pushcut for '{plug.get('name')}': {ex}")
+                        send_pushcut_notification(pushcut_url, "Govee Plug Alert", f"{plug.get('name')} is unresponsive or failed power check.")
                     fail_count = 0
             else:
                 fail_count = 0
@@ -395,9 +450,14 @@ def main():
     sysd_parser = subparsers.add_parser("generate-systemd", help="Generate a systemd unit file for the monitor")
     sysd_parser.add_argument("--dry-run", action="store_true", help="If set, only print the unit file (default)")
 
+    test_parser = subparsers.add_parser("test-pushcut", help="Send a test notification to Pushcut")
+    test_parser.set_defaults(func=test_pushcut)
+
     args = parser.parse_args()
 
-    if args.command == "config":
+    if hasattr(args, "func"):
+        args.func()
+    elif args.command == "config":
         write_config()
     elif args.command == "check":
         check_config(getattr(args, "notify", False))

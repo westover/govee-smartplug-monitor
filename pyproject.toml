@@ -31,3 +31,6 @@ cmd = "journalctl -u govee-monitor.service -f"
 
 [tool.pdm.scripts.restart-systemd]
 cmd = "sudo systemctl restart govee-monitor.service"
+
+[tool.pdm.scripts.test-pushcut]
+cmd = "python cli.py test-pushcut"
