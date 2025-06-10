@@ -1,8 +1,8 @@
-import argparse
 import json
 import os
 import requests
 import time
+
 
 # Helper: send pushcut notification
 def send_pushcut_notification(pushcut_url, title, text):
@@ -25,6 +25,47 @@ def send_pushcut_notification(pushcut_url, title, text):
     except Exception as e:
         print(f"Error sending Pushcut notification: {e}")
 
+
+# Check plug state helper
+def check_plug_state(plug, headers, send_notifications, pushcut_url):
+    name = plug.get("name")
+    device_id = plug.get("device_id")
+    model = plug.get("model")
+    expected_power = plug.get("expected_power", "ignore")
+    monitor_responsive = plug.get("monitor_responsive", True)
+
+    url = "https://developer-api.govee.com/v1/devices/state"
+    try:
+        response = requests.get(url, headers=headers, params={"device": device_id, "model": model}, timeout=10)
+
+        if response.status_code != 200:
+            if monitor_responsive:
+                print(f"{name} is unresponsive (HTTP {response.status_code})")
+                if send_notifications and pushcut_url:
+                    send_pushcut_notification(pushcut_url, "Govee Plug Alert", f"{name} is unresponsive.")
+                return True
+            return False
+
+        data = response.json()
+        state = data.get("data", {}).get("properties", [{}])[0].get("value")
+
+        if expected_power != "ignore" and state != expected_power:
+            print(f"{name} is in wrong power state (expected {expected_power}, got {state})")
+            if send_notifications and pushcut_url:
+                send_pushcut_notification(
+                    pushcut_url,
+                    "Govee Power State Alert",
+                    f"{name} is {state.upper()} but expected {expected_power.upper()}"
+                )
+            return True
+
+    except Exception as e:
+        print(f"Error checking {name}: {e}")
+        return True
+
+    return False
+
+
 def test_pushcut():
     if not os.path.exists(CONFIG_FILE):
         print(f"No config found at {CONFIG_FILE}. Please run 'config' first.")
@@ -39,13 +80,10 @@ def test_pushcut():
         return
 
     send_pushcut_notification(pushcut_url, "Pushcut Test Notification", "This is a test from your Govee monitor setup.")
-import argparse
-import json
-import os
-import requests
-import time
+
 
 CONFIG_FILE = "config.json"
+
 
 def write_config():
     print("Setting up Govee Plug Monitor Configuration\n")
@@ -75,7 +113,8 @@ def write_config():
         response.raise_for_status()
         devices = response.json().get("data", {}).get("devices", [])
         if not devices:
-            print("No devices were found in your Govee account. Please ensure your account is linked to devices in the Govee app.")
+            print(
+                "No devices were found in your Govee account. Please ensure your account is linked to devices in the Govee app.")
             return
     except Exception as e:
         print(f"Error fetching devices with provided API key: {e}")
@@ -107,7 +146,8 @@ def write_config():
             responsive_devices.append(device)
 
     # Summary
-    print(f"\nFound {len(devices)} devices: {len(responsive_devices)} responsive, {len(unresponsive_devices)} unresponsive.\n")
+    print(
+        f"\nFound {len(devices)} devices: {len(responsive_devices)} responsive, {len(unresponsive_devices)} unresponsive.\n")
 
     # Prompt for monitoring all responsive devices
     monitor_all_resp = input("Monitor all responsive devices? (y/n, default=y): ").strip().lower() or "y"
@@ -135,10 +175,13 @@ def write_config():
         return
 
     # Prompt for shared Pushcut URL for all monitored plugs
-    pushcut_url = input(f"Enter a Pushcut URL to use for all monitored plugs (leave blank to skip) [{existing_config.get('pushcut_url', '')}]: ").strip() or existing_config.get("pushcut_url", "")
+    pushcut_url = input(
+        f"Enter a Pushcut URL to use for all monitored plugs (leave blank to skip) [{existing_config.get('pushcut_url', '')}]: ").strip() or existing_config.get(
+        "pushcut_url", "")
 
     # Ask if expected power states should be configured
-    configure_expected_power = input("Configure expected power states per device? (y/n, default=n): ").strip().lower() or "n"
+    configure_expected_power = input(
+        "Configure expected power states per device? (y/n, default=n): ").strip().lower() or "n"
     configure_expected_power = (configure_expected_power == "y")
 
     plugs = []
@@ -163,7 +206,8 @@ def write_config():
             observed_power = "unknown"
         # Set expected_power
         if configure_expected_power:
-            print(f"Expected power state for '{name}' (on/off/ignore) [default: ignore, current: {observed_power}]: ", end="")
+            print(f"Expected power state for '{name}' (on/off/ignore) [default: ignore, current: {observed_power}]: ",
+                  end="")
             power_input = input().strip().lower() or "ignore"
         else:
             power_input = "ignore"
@@ -200,11 +244,13 @@ def write_config():
         json.dump(config, f, indent=2)
     print(f"\nConfiguration saved to {CONFIG_FILE}")
 
+
 def send_pushcut(url, title, message):
     try:
         requests.post(url, json={"title": title, "text": message}, timeout=5)
     except Exception as e:
         print(f"⚠️  Failed to send Pushcut notification: {e}")
+
 
 def check_config(send_notifications: bool = False):
     if not os.path.exists(CONFIG_FILE):
@@ -283,7 +329,8 @@ def check_config(send_notifications: bool = False):
                         if device_id in monitored:
                             expected_power = monitored[device_id]["expected_power"]
                             if expected_power != "ignore" and power_status != expected_power:
-                                print(f"- {device.get('deviceName')} power mismatch: expected {expected_power}, got {power_status}")
+                                print(
+                                    f"- {device.get('deviceName')} power mismatch: expected {expected_power}, got {power_status}")
                                 any_monitored_offline = True
                                 if send_notifications and monitored[device_id].get("pushcut_url"):
                                     send_pushcut(
@@ -317,6 +364,7 @@ def check_config(send_notifications: bool = False):
     except Exception as e:
         print(f"Error accessing Govee API: {e}")
 
+
 def run_monitor(fail_mode="any"):
     if not os.path.exists(CONFIG_FILE):
         print(f"No config found at {CONFIG_FILE}. Please run 'config' first.")
@@ -345,60 +393,24 @@ def run_monitor(fail_mode="any"):
 
     while True:
         try:
-            all_fail = True
+            failure = False
             for plug in monitored_plugs:
-                device_id = plug.get("device_id")
-                model = plug.get("model")
-                name = plug.get("name")
-                pushcut_url = plug.get("pushcut_url", config.get("pushcut_url", ""))
-                power_expected = plug.get("expected_power", "ignore")
-                try:
-                    state_response = requests.get(
-                        "https://developer-api.govee.com/v1/devices/state",
-                        headers=headers,
-                        params={"device": device_id, "model": model},
-                        timeout=10
-                    )
-                    if state_response.status_code == 200:
-                        state_data = state_response.json().get("data", {})
-                        props = {p: v for d in state_data.get("properties", []) for p, v in d.items()}
-                        online_status = props.get("online", True)
-                        state = props.get("powerState", None)
-                        failure = False
-                        if online_status:
-                            print(f"{time.ctime()}: Plug '{name}' is online.")
-                            all_fail = False
-                        else:
-                            print(f"{time.ctime()}: Plug '{name}' is UNRESPONSIVE.")
-                            failure = True
-                            send_pushcut_notification(pushcut_url, "Govee Plug Alert", f"{name} is unresponsive or failed power check.")
-                        # Power state check and Pushcut notification for mismatch
-                        if power_expected != "ignore":
-                            if state != power_expected:
-                                print(f"{name} is in wrong power state (expected {power_expected}, got {state})")
-                                failure = True
-                                if pushcut_url:
-                                    send_pushcut_notification(
-                                        pushcut_url,
-                                        "Govee Power State Alert",
-                                        f"{name} is {str(state).upper()} but expected to be {str(power_expected).upper()}"
-                                    )
-                    else:
-                        print(f"{time.ctime()}: Plug '{name}' response error (status {state_response.status_code})")
-                except Exception as e:
-                    print(f"{time.ctime()}: Plug '{name}' error: {e}")
+                plug_pushcut_url = plug.get("pushcut_url", config.get("pushcut_url", ""))
+                if check_plug_state(plug, headers, True, plug_pushcut_url):
+                    failure = True
 
             # Print check completion message at the end of the monitoring loop, before sleep
             print(f"{time.ctime()}: Check complete for all devices. Run marked successful.\n")
 
-            should_alert = (all_fail if fail_mode == "all" else all_fail == False)
-            if not should_alert:
+            should_alert = (failure if fail_mode == "any" else failure)
+            if should_alert:
                 fail_count += 1
                 if fail_count >= threshold:
                     print(f"{time.ctime()}: ALERT - Failure condition met for {threshold * interval} seconds.")
                     for plug in monitored_plugs:
                         pushcut_url = plug.get("pushcut_url", config.get("pushcut_url", ""))
-                        send_pushcut_notification(pushcut_url, "Govee Plug Alert", f"{plug.get('name')} is unresponsive or failed power check.")
+                        send_pushcut_notification(pushcut_url, "Govee Plug Alert",
+                                                  f"{plug.get('name')} is unresponsive or failed power check.")
                     fail_count = 0
             else:
                 fail_count = 0
@@ -407,7 +419,6 @@ def run_monitor(fail_mode="any"):
         except Exception as e:
             print(f"{time.ctime()}: Error during monitoring loop: {e}")
             time.sleep(interval)
-
 
 
 # Generate and install the systemd unit file for the monitor
@@ -450,6 +461,7 @@ WantedBy=multi-user.target
     except Exception as e:
         print(f"Error setting up systemd service: {e}")
 
+
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Govee Smart Plug Monitor")
@@ -460,7 +472,8 @@ def main():
     check_parser.add_argument("--notify", action="store_true", help="Send Pushcut notifications on check failures")
 
     run_parser = subparsers.add_parser("run", help="Run the monitoring loop")
-    run_parser.add_argument("--fail-mode", choices=["any", "all"], default="any", help="Fail if 'any' or 'all' plugs are unreachable")
+    run_parser.add_argument("--fail-mode", choices=["any", "all"], default="any",
+                            help="Fail if 'any' or 'all' plugs are unreachable")
 
     sysd_parser = subparsers.add_parser("generate-systemd", help="Generate a systemd unit file for the monitor")
     sysd_parser.add_argument("--dry-run", action="store_true", help="If set, only print the unit file (default)")
@@ -482,6 +495,7 @@ def main():
         generate_systemd_unit()
     else:
         parser.print_help()
+
 
 if __name__ == "__main__":
     main()
