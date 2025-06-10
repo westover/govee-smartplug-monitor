@@ -1,4 +1,12 @@
-
+# IDEs and editors
+.idea/               # JetBrains (e.g., PyCharm, IntelliJ)
+*.iml
+.vscode/             # Visual Studio Code
+.project             # Eclipse
+.classpath           # Eclipse
+.settings/           # Eclipse
+Thumbs.db            # Windows image cache
+.DS_Store            # macOS folder metadata
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -85,16 +93,29 @@ ipython_config.py
 # pyenv
 .python-version
 
-# pipenv
-Pipfile.lock
+# celery beat schedule file
+celerybeat-schedule
 
-# pdm
-__pypackages__/
-pdm.lock
-.pdm-python
+# dotenv
+.env
+.env.*.local
 
-# pyright
-.pyright/
+# virtualenv
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
 
 # mypy
 .mypy_cache/
@@ -104,14 +125,11 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# pytype
+# pytype static type analyzer
 .pytype/
 
 # Cython debug symbols
 cython_debug/
 
-# VS Code
-.vscode/
-
-# PyCharm
-.idea/
+# Don't upload secrets
+config.json
